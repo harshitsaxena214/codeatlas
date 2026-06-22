@@ -14,6 +14,7 @@ class IngestionStep(str, enum.Enum):
     PULL_REQUESTS = "pull_requests"
     DISCUSSIONS = "discussions"
     CONTRIBUTORS = "contributors"
+    RELEASES = "releases"
     MEMORY_GRAPH = "memory_graph"
 
 

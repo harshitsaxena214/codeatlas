@@ -194,3 +194,13 @@ class MemoryStats(BaseModel):
     total_nodes: int
     total_relationships: int
     entity_counts: dict  # { "Issue": 42, "PR": 31, ... }
+
+# ─── Feature 10: Architecture Explorer ───
+
+class ArchitectureRequest(BaseModel):
+    subsystem: str | None = None
+
+class ArchitectureResponse(BaseModel):
+    subsystem: str
+    architecture_overview: str
+

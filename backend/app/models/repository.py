@@ -32,6 +32,12 @@ class Repository(Base):
     topics: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON string of topics
     default_branch: Mapped[str] = mapped_column(String(100), default="main")
 
+    # Cached dashboard counts
+    contributor_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    pr_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    discussion_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    contribution_opportunities: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
     # Cognee integration
     cognee_dataset_name: Mapped[str] = mapped_column(String(255), nullable=False)
 
