@@ -22,17 +22,15 @@ export function StatsCard({
 }: StatsCardProps) {
   const [displayed, setDisplayed] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  const animated = useRef(false);
 
   useEffect(() => {
-    if (animated.current) return;
-    animated.current = true;
-
+    let active = true;
     const timeout = setTimeout(() => {
       const duration = 1200;
       const start = performance.now();
 
       const tick = (now: number) => {
+        if (!active) return;
         const elapsed = now - start;
         const progress = Math.min(elapsed / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
@@ -43,7 +41,10 @@ export function StatsCard({
       requestAnimationFrame(tick);
     }, delay);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
   }, [value, delay]);
 
   return (

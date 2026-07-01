@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   Sparkles,
@@ -30,7 +30,7 @@ function AnalyzeContent() {
   const { data: session } = useSession();
 
   const createMutation = useMutation({
-    mutationFn: (github_url: string) => api.createRepository(github_url, (session?.user as any)?.backendId),
+    mutationFn: (github_url: string) => api.createRepository(github_url, session?.user?.backendId),
     onSuccess: (repo) => {
       setRepoId(repo.id);
       if (repo.status === "ready") {

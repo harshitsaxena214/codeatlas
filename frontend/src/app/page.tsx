@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
 import {
   BookOpen,
@@ -116,7 +118,7 @@ export default function HomePage() {
                 Analyze Repo
               </Link>
               {session.user?.image && (
-                <img 
+                <img
                   src={session.user.image} 
                   alt="Avatar" 
                   className="w-8 h-8 rounded-full ml-2 border border-white/10" 

@@ -5,6 +5,13 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export type RepositoryStatus =
+  | "pending"
+  | "ingesting"
+  | "processing_memory"
+  | "ready"
+  | "failed";
+
 // ─── Types ───
 
 export interface Repository {
@@ -20,7 +27,7 @@ export interface Repository {
   topics: string | null;
   default_branch: string;
   cognee_dataset_name: string;
-  status: "pending" | "ingesting" | "ready" | "failed";
+  status: RepositoryStatus;
   ingested_at: string | null;
   created_at: string;
   user_id: string;
@@ -35,7 +42,7 @@ export interface RepositoryListItem {
   stars: number;
   forks: number;
   language: string | null;
-  status: "pending" | "ingesting" | "ready" | "failed";
+  status: RepositoryStatus;
   created_at: string;
 }
 
@@ -50,7 +57,7 @@ export interface RepositoryDashboard {
   language: string | null;
   topics: string[];
   default_branch: string;
-  status: "pending" | "ingesting" | "ready" | "failed";
+  status: RepositoryStatus;
   ingested_at: string | null;
   memory_nodes: number;
   memory_relationships: number;

@@ -7,7 +7,6 @@ import {
   Star,
   GitFork,
   Bug,
-  Code,
   BrainCircuit,
   BookOpen,
   Target,

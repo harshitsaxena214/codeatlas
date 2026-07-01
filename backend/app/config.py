@@ -21,21 +21,24 @@ class Settings(BaseSettings):
 
     # ─── LLM Provider Strategy ────────────────────────────────────────────────
     # Global fallback provider (used if neither ingestion nor query provider is set)
-    LLM_PROVIDER: str = "openai"
+    LLM_PROVIDER: str = "gemini"
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
+    GROQ_MODEL: str = "groq/compound"
 
     # Ingestion pipeline provider — use a fast, high-rate-limit model
     # Recommended: "openai" with gpt-4o-mini (30,000 RPM, cheap, reliable)
-    # Fallback: "gemini" with gemini-2.0-flash
-    LLM_INGESTION_PROVIDER: str = "openai"
-    LLM_INGESTION_MODEL: str = "gpt-4o-mini"
+    # Fallback: "gemini" with gemini-2.5-flash
+    LLM_INGESTION_PROVIDER: str = "gemini"
+    LLM_INGESTION_MODEL: str = "gemini-2.5-flash"
 
     # User-facing query provider — use a model with large context + quality output
-    # Recommended: "gemini" with gemini-2.0-flash (1M context window, cheap)
+    # Recommended: "gemini" with gemini-2.5-flash (1M context window, cheap)
     # Fallback: "openai" with gpt-4o-mini
     LLM_QUERY_PROVIDER: str = "gemini"
-    LLM_QUERY_MODEL: str = "gemini-2.0-flash"
+    LLM_QUERY_MODEL: str = "gemini-2.5-flash"
 
     # Auth
     JWT_SECRET_KEY: str = "change-this-in-production"

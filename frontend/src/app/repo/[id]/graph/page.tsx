@@ -15,7 +15,7 @@ import {
   Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { GitFork, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { GlassCard } from "@/components/GlassCard";
 
@@ -33,6 +33,14 @@ const nodeTypeColors: Record<string, string> = {
 
 function getNodeColor(type: string): string {
   return nodeTypeColors[type.toLowerCase()] || nodeTypeColors.default;
+}
+
+function stableOffset(value: string, axis: "x" | "y"): number {
+  let hash = axis === "x" ? 17 : 31;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 33 + value.charCodeAt(i)) % 40;
+  }
+  return hash;
 }
 
 export default function KnowledgeGraphPage() {
@@ -57,7 +65,10 @@ export default function KnowledgeGraphPage() {
 
       return {
         id: n.id,
-        position: { x: col * 220 + Math.random() * 40, y: row * 150 + Math.random() * 40 },
+        position: {
+          x: col * 220 + stableOffset(n.id, "x"),
+          y: row * 150 + stableOffset(n.id, "y"),
+        },
         data: {
           label: n.label,
           nodeType: n.node_type,

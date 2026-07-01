@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, ExternalLink, ArrowRight } from "lucide-react";
+import { BookOpen, ExternalLink } from "lucide-react";
 import { api } from "@/lib/api";
 import { GlassCard } from "@/components/GlassCard";
 import { FeedbackButtons } from "@/components/FeedbackButtons";

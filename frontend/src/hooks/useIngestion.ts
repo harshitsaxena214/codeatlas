@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { api, IngestionProgressEvent, IngestionStatus } from "@/lib/api";
+import { api, IngestionProgressEvent } from "@/lib/api";
 
 /**
  * Hook for starting the ingestion pipeline.
@@ -39,7 +39,10 @@ export function useIngestionStream(
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!repoId) return;

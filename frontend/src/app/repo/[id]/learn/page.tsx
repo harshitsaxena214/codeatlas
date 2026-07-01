@@ -8,7 +8,6 @@ import {
   Loader2,
   Clock,
   ExternalLink,
-  BookOpen,
 } from "lucide-react";
 import { api, LearningPath } from "@/lib/api";
 import { GlassCard } from "@/components/GlassCard";

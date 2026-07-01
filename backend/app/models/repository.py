@@ -11,6 +11,7 @@ from app.database import Base
 class RepositoryStatus(str, enum.Enum):
     PENDING = "pending"
     INGESTING = "ingesting"
+    PROCESSING_MEMORY = "processing_memory"  # Stage 2: memory graph building
     READY = "ready"
     FAILED = "failed"
 
@@ -59,6 +60,29 @@ class Repository(Base):
     user = relationship("User", back_populates="repositories")
     ingestion_jobs = relationship("IngestionJob", back_populates="repository", lazy="selectin")
     feedbacks = relationship("Feedback", back_populates="repository", lazy="selectin")
+    ai_cache = relationship("RepositoryAICache", back_populates="repository", uselist=False, cascade="all, delete-orphan", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Repository(owner={self.owner}, name={self.name}, status={self.status})>"
+
+
+class RepositoryAICache(Base):
+    __tablename__ = "repository_ai_caches"
+
+    repo_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("repositories.id", ondelete="CASCADE"), primary_key=True
+    )
+    dashboard: Mapped[str | None] = mapped_column(Text, nullable=True)
+    timeline: Mapped[str | None] = mapped_column(Text, nullable=True)
+    architecture: Mapped[str | None] = mapped_column(Text, nullable=True)
+    learning_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    maintainer_brain: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decision_explorer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    knowledge_graph: Mapped[str | None] = mapped_column(Text, nullable=True)
+    generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    commit_sha: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="pending")
+
+    # Relationships
+    repository = relationship("Repository", back_populates="ai_cache")
+

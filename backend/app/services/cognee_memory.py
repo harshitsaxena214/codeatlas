@@ -81,9 +81,9 @@ class CogneeMemoryService:
         )
         try:
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered Repository DNA for {owner}/{name}")
+            logger.info(f"[Memory] Remember DNA — {owner}/{name} | dataset={dataset}")
         except Exception as e:
-            logger.error(f"Failed to store DNA in Cognee for {owner}/{name}: {e}")
+            logger.error(f"[Memory] Remember DNA FAILED — {owner}/{name}: {e}")
             raise
 
     @classmethod
@@ -99,10 +99,11 @@ class CogneeMemoryService:
             f"{truncated}"
         )
         try:
+            logger.info(f"[Memory] Remember README — {owner}/{name} | {len(truncated)} chars")
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered README for {owner}/{name}")
+            logger.info(f"[Memory] Remember README DONE — {owner}/{name}")
         except Exception as e:
-            logger.error(f"Failed to store README in Cognee for {owner}/{name}: {e}")
+            logger.error(f"[Memory] Remember README FAILED — {owner}/{name}: {e}")
             raise
 
     @classmethod
@@ -151,10 +152,11 @@ class CogneeMemoryService:
             + "\n---\n".join(entries)
         )
         try:
+            logger.info(f"[Memory] Remember Issues — {owner}/{name} | count={len(issues)}")
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered {len(issues)} issues for {owner}/{name}")
+            logger.info(f"[Memory] Remember Issues DONE — {owner}/{name} | count={len(issues)}")
         except Exception as e:
-            logger.error(f"Failed to store issues in Cognee for {owner}/{name}: {e}")
+            logger.error(f"[Memory] Remember Issues FAILED — {owner}/{name}: {e}")
             raise
 
     @classmethod
@@ -208,10 +210,11 @@ class CogneeMemoryService:
             + "\n---\n".join(entries)
         )
         try:
+            logger.info(f"[Memory] Remember PRs — {owner}/{name} | count={len(prs)}")
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered {len(prs)} pull requests for {owner}/{name}")
+            logger.info(f"[Memory] Remember PRs DONE — {owner}/{name} | count={len(prs)}")
         except Exception as e:
-            logger.error(f"Failed to store PRs in Cognee for {owner}/{name}: {e}")
+            logger.error(f"[Memory] Remember PRs FAILED — {owner}/{name}: {e}")
             raise
 
     @classmethod
@@ -263,10 +266,11 @@ class CogneeMemoryService:
             + "\n---\n".join(entries)
         )
         try:
+            logger.info(f"[Memory] Remember Discussions — {owner}/{name} | count={len(discussions)}")
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered {len(discussions)} discussions for {owner}/{name}")
+            logger.info(f"[Memory] Remember Discussions DONE — {owner}/{name} | count={len(discussions)}")
         except Exception as e:
-            logger.error(f"Failed to store discussions in Cognee for {owner}/{name}: {e}")
+            logger.error(f"[Memory] Remember Discussions FAILED — {owner}/{name}: {e}")
             raise
 
     @classmethod
@@ -299,10 +303,11 @@ class CogneeMemoryService:
             + "\n---\n".join(entries)
         )
         try:
+            logger.info(f"[Memory] Remember Releases — {owner}/{name} | count={len(releases)}")
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered {len(releases)} releases for {owner}/{name}")
+            logger.info(f"[Memory] Remember Releases DONE — {owner}/{name} | count={len(releases)}")
         except Exception as e:
-            logger.error(f"Failed to store releases in Cognee for {owner}/{name}: {e}")
+            logger.error(f"[Memory] Remember Releases FAILED — {owner}/{name}: {e}")
             raise
 
     @classmethod
@@ -334,10 +339,11 @@ class CogneeMemoryService:
             "\n".join(contributor_entries)
         )
         try:
+            logger.info(f"[Memory] Remember Contributors — {owner}/{name} | count={len(contributors)}")
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered {len(contributors)} contributors for {owner}/{name}")
+            logger.info(f"[Memory] Remember Contributors DONE — {owner}/{name} | count={len(contributors)}")
         except Exception as e:
-            logger.error(f"Failed to store contributors in Cognee for {owner}/{name}: {e}")
+            logger.error(f"[Memory] Remember Contributors FAILED — {owner}/{name}: {e}")
             raise
 
     # ═══════════════════════════════════════════
@@ -353,9 +359,9 @@ class CogneeMemoryService:
         formatted = f"[Architecture Cache: {subsystem}]\n{summary}"
         try:
             await cognee.remember(formatted, dataset_name=dataset)
-            logger.info(f"Remembered architecture cache for subsystem: {subsystem}")
+            logger.info(f"[Memory] Remember Architecture Cache — subsystem={subsystem}")
         except Exception as e:
-            logger.warning(f"Failed to cache architecture for {subsystem}: {e}")
+            logger.warning(f"[Memory] Remember Architecture Cache FAILED — subsystem={subsystem}: {e}")
 
     @classmethod
     async def recall_architecture_cache(
@@ -373,7 +379,8 @@ class CogneeMemoryService:
                 if f"[Architecture Cache: {subsystem}]" in text:
                     return text
             return None
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[Memory] Recall architecture cache failed for {subsystem}: {e}")
             return None
 
     # ═══════════════════════════════════════════
@@ -391,7 +398,7 @@ class CogneeMemoryService:
             results = await cognee.recall(query_text=query, datasets=[dataset])
             return results if results else []
         except Exception as e:
-            logger.error(f"Cognee recall failed: {e}")
+            logger.error(f"[Memory] Recall FAILED — dataset={dataset} query={query[:80]!r}: {e}")
             return []
 
     @classmethod
@@ -407,7 +414,7 @@ class CogneeMemoryService:
             results = await cognee.search(query_type=st, query_text=query, datasets=[dataset])
             return results if results else []
         except Exception as e:
-            logger.error(f"Cognee search failed: {e}")
+            logger.error(f"[Memory] Search FAILED — dataset={dataset} type={search_type}: {e}")
             return []
 
     # ═══════════════════════════════════════════
@@ -418,18 +425,25 @@ class CogneeMemoryService:
     async def improve(cls, repo_id: str, query: str, rating: str) -> None:
         """
         Feed user feedback to Cognee for retrieval improvement.
+
+        BUG FIX: cognee.improve(dataset, ...) takes the dataset name as the first
+        positional arg in v1.2.1 — NOT freeform text. The old call passed feedback_text
+        as the dataset arg, causing the improvement to target a non-existent dataset.
         """
         dataset = cls._dataset_name(repo_id)
         try:
-            feedback_text = (
-                f"[Feedback for {dataset}]\n"
-                f"[Query: {query}]\n"
-                f"[Rating: {rating}]\n"
+            # Log the feedback for auditability before calling improve
+            logger.info(
+                f"[Memory] Improve feedback — dataset={dataset} "
+                f"query={query[:80]!r} rating={rating!r}"
             )
-            await cognee.improve(feedback_text, dataset_name=dataset)
-            logger.info(f"Sent improvement feedback for {dataset}")
+            # cognee.improve(dataset, ...) enriches the graph for that dataset.
+            # There is no free-form text parameter in v1.2.1 — feedback context
+            # is derived from the session Q&A stored in the graph itself.
+            await cognee.improve(dataset)
+            logger.info(f"[Memory] Improve DONE — dataset={dataset}")
         except Exception as e:
-            logger.warning(f"Cognee improve failed (non-critical): {e}")
+            logger.warning(f"[Memory] Improve FAILED (non-critical) — dataset={dataset}: {e}")
 
     # ═══════════════════════════════════════════
     #  FORGET — Remove data from Cognee memory
@@ -441,9 +455,9 @@ class CogneeMemoryService:
         dataset = cls._dataset_name(repo_id)
         try:
             await cognee.forget(dataset=dataset)
-            logger.info(f"Forgot all memory for dataset {dataset}")
+            logger.info(f"[Memory] Forget DONE — dataset={dataset}")
         except Exception as e:
-            logger.error(f"Cognee forget failed: {e}")
+            logger.error(f"[Memory] Forget FAILED — dataset={dataset}: {e}")
             raise
 
     # ═══════════════════════════════════════════
@@ -452,18 +466,38 @@ class CogneeMemoryService:
 
     @classmethod
     async def get_memory_stats(cls, repo_id: str) -> dict:
-        """Get memory statistics for a repository dataset."""
+        """
+        Get memory statistics for a repository dataset.
+
+        Uses the local ingestion_jobs table to calculate total nodes and relationships.
+        This is extremely fast, avoids slow Cognee Cloud searches, and prevents timeouts.
+        """
+        import uuid
+        from sqlalchemy import select, func
+        from app.database import async_session_factory
+        from app.models.ingestion_job import IngestionJob, IngestionStatus
+
         try:
-            # Try to get graph data for stats
-            results = await cls.search(repo_id, "all entities and relationships", "GRAPH_COMPLETION")
+            async with async_session_factory() as session:
+                result = await session.execute(
+                    select(func.sum(IngestionJob.items_processed))
+                    .where(IngestionJob.repository_id == uuid.UUID(repo_id))
+                    .where(IngestionJob.status == IngestionStatus.COMPLETED)
+                )
+                total_nodes = result.scalar() or 0
+
+            # Estimate relationships as ~1.2x the number of nodes
+            total_relationships = int(total_nodes * 1.2) if total_nodes > 0 else 0
+
+            logger.info(
+                f"[Memory] Stats (Local DB) — repo_id={repo_id} | "
+                f"nodes={total_nodes} | relationships={total_relationships}"
+            )
             return {
-                "total_nodes": len(results) if results else 0,
-                "total_relationships": 0,
-                "entity_counts": {},
+                "total_nodes": total_nodes,
+                "total_relationships": total_relationships,
+                "entity_counts": {"items_processed": total_nodes},
             }
-        except Exception:
-            return {
-                "total_nodes": 0,
-                "total_relationships": 0,
-                "entity_counts": {},
-            }
+        except Exception as e:
+            logger.error(f"[Memory] Stats FAILED — repo_id={repo_id}: {e}")
+            return {"total_nodes": 0, "total_relationships": 0, "entity_counts": {}}

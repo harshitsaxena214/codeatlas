@@ -234,3 +234,13 @@ class GitHubFetcher:
         except GithubException:
             pass
         return releases
+
+    def fetch_latest_commit_sha(self, owner: str, name: str) -> str:
+        """Fetch the latest commit SHA of the default branch of the repository."""
+        try:
+            repo = self.github.get_repo(f"{owner}/{name}")
+            return repo.get_branch(repo.default_branch).commit.sha
+        except Exception as e:
+            logger.error(f"Failed to fetch latest commit SHA: {e}")
+            return ""
+

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Timer, ExternalLink, Loader2 } from "lucide-react";
+import { Timer, ExternalLink } from "lucide-react";
 import { api } from "@/lib/api";
 import { GlassCard } from "@/components/GlassCard";
 import { FeedbackButtons } from "@/components/FeedbackButtons";

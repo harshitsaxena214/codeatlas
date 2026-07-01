@@ -138,6 +138,39 @@ async def get_repository_dashboard(
     )
 
 
+@router.post("/{repo_id}/refresh-metadata", response_model=RepositoryResponse)
+async def refresh_repository_metadata(
+    repo_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-fetch GitHub metadata (stars, forks, issues, etc.) for a repository."""
+    result = await db.execute(
+        select(Repository).where(Repository.id == repo_id)
+    )
+    repo = result.scalar_one_or_none()
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+
+    fetcher = GitHubFetcher()
+    try:
+        owner, name = fetcher.parse_repo_url(repo.github_url)
+        metadata = fetcher.fetch_repo_metadata(owner, name)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to refresh from GitHub: {str(e)}")
+
+    repo.description = metadata.get("description", repo.description)
+    repo.stars = metadata.get("stars", repo.stars)
+    repo.forks = metadata.get("forks", repo.forks)
+    repo.open_issues = metadata.get("open_issues", repo.open_issues)
+    repo.language = metadata.get("language", repo.language)
+    repo.topics = json.dumps(metadata.get("topics", []))
+    repo.default_branch = metadata.get("default_branch", repo.default_branch)
+
+    await db.commit()
+    await db.refresh(repo)
+    return repo
+
+
 @router.delete("/{repo_id}")
 async def delete_repository(
     repo_id: uuid.UUID,

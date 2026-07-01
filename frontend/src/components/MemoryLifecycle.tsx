@@ -12,10 +12,11 @@ import {
 } from "lucide-react";
 import { useForgetMemory } from "@/hooks/useIngestion";
 import { GlassCard } from "@/components/GlassCard";
+import type { RepositoryStatus } from "@/lib/api";
 
 interface MemoryLifecycleProps {
   repoId: string;
-  status: "pending" | "ingesting" | "ready" | "failed";
+  status: RepositoryStatus;
   onReIngest?: () => void;
   onForgetComplete?: () => void;
 }
@@ -49,14 +50,18 @@ export function MemoryLifecycle({
       label: "Remember",
       description: "Ingest repo data into Cognee knowledge graph",
       color: "var(--accent-blue)",
-      status: status === "ready" ? "complete" : status === "ingesting" ? "active" : "pending",
+      status: status === "ready" || status === "processing_memory"
+        ? "complete"
+        : status === "ingesting"
+          ? "active"
+          : "pending",
     },
     {
       icon: Search,
       label: "Recall",
       description: "Query memory for contextual AI responses",
       color: "var(--accent-cyan)",
-      status: status === "ready" ? "complete" : "pending",
+      status: status === "ready" ? "complete" : status === "processing_memory" ? "active" : "pending",
     },
     {
       icon: ThumbsUp,
@@ -92,17 +97,21 @@ export function MemoryLifecycle({
                 ? "hsla(152, 69%, 50%, 0.12)"
                 : status === "ingesting"
                   ? "hsla(217, 91%, 60%, 0.12)"
-                  : status === "failed"
-                    ? "hsla(0, 72%, 55%, 0.12)"
-                    : "hsla(225, 10%, 55%, 0.12)",
+                  : status === "processing_memory"
+                    ? "hsla(190, 80%, 55%, 0.12)"
+                    : status === "failed"
+                      ? "hsla(0, 72%, 55%, 0.12)"
+                      : "hsla(225, 10%, 55%, 0.12)",
             color:
               status === "ready"
                 ? "var(--accent-green)"
                 : status === "ingesting"
                   ? "var(--accent-blue)"
-                  : status === "failed"
-                    ? "var(--accent-red)"
-                    : "var(--text-secondary)",
+                  : status === "processing_memory"
+                    ? "var(--accent-cyan)"
+                    : status === "failed"
+                      ? "var(--accent-red)"
+                      : "var(--text-secondary)",
           }}
         >
           {status}

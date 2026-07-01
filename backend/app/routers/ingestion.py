@@ -80,6 +80,11 @@ async def _run_ingestion(repo_id: str, owner: str, name: str):
     Stage 2 — Memory Graph    (parallel Cognee writes, each step isolated)
     """
     fetcher = GitHubFetcher()
+    commit_sha = ""
+    try:
+        commit_sha = await asyncio.to_thread(fetcher.fetch_latest_commit_sha, owner, name)
+    except Exception as e:
+        logger.warning(f"Could not fetch latest commit SHA: {e}")
 
     async with async_session_factory() as db:
         try:
@@ -242,16 +247,17 @@ async def _run_ingestion(repo_id: str, owner: str, name: str):
 
             await _update_job_status(db, repo_id, IngestionStep.README, IngestionStatus.COMPLETED, 100, 1, 1)
 
-            # ── Mark repository READY so Dashboard opens immediately ─────────
+            # ── Mark repository PROCESSING_MEMORY — DNA ready, memory graph starting ──
+            # BUG FIX: Previously set READY here, which allowed Timeline/KG/Q&A to
+            # open before any data was in Cognee. READY now means memory is available.
             result = await db.execute(select(Repository).where(Repository.id == uuid.UUID(repo_id)))
             repo = result.scalar_one()
-            repo.status = RepositoryStatus.READY
-            repo.ingested_at = datetime.now(timezone.utc)
-            
+            repo.status = RepositoryStatus.PROCESSING_MEMORY
+
             repo.contributor_count = len(contributors) if isinstance(contributors, list) else 0
             repo.pr_count = len(prs) if isinstance(prs, list) else 0
             repo.discussion_count = len(discussions) if isinstance(discussions, list) else 0
-            
+
             # Count opportunities (good first issues / help wanted)
             opp_count = 0
             if isinstance(issues, list):
@@ -263,19 +269,20 @@ async def _run_ingestion(repo_id: str, owner: str, name: str):
 
             await db.commit()
 
-            _emit_progress(repo_id, "complete", "completed", 100,
-                           "Dashboard is ready! Memory Graph building in background...")
+            _emit_progress(repo_id, "memory_graph", "running", 40,
+                           "Stage 1 complete. Building Memory Graph...")
 
             # ── STAGE 2: MEMORY GRAPH CONSTRUCTION (parallel, isolated) ──────
             # All Cognee memory writes run concurrently. Each is wrapped in
             # try/except so a single failure never blocks the others.
-            _emit_progress(repo_id, "issues", "running", 35, "Building Memory Graph...")
+            logger.info(f"[Ingestion] Memory Graph Started — {owner}/{name}")
+            _emit_progress(repo_id, "issues", "running", 40, "Building Memory Graph...")
 
-            await _update_job_status(db, repo_id, IngestionStep.ISSUES,       IngestionStatus.RUNNING, 35, 0, len(issues))
-            await _update_job_status(db, repo_id, IngestionStep.PULL_REQUESTS, IngestionStatus.RUNNING, 35, 0, len(prs))
-            await _update_job_status(db, repo_id, IngestionStep.DISCUSSIONS,   IngestionStatus.RUNNING, 35, 0, len(discussions))
-            await _update_job_status(db, repo_id, IngestionStep.CONTRIBUTORS,  IngestionStatus.RUNNING, 35, 0, len(contributors))
-            await _update_job_status(db, repo_id, IngestionStep.RELEASES,      IngestionStatus.RUNNING, 35, 0, len(releases))
+            await _update_job_status(db, repo_id, IngestionStep.ISSUES,       IngestionStatus.RUNNING, 40, 0, len(issues))
+            await _update_job_status(db, repo_id, IngestionStep.PULL_REQUESTS, IngestionStatus.RUNNING, 40, 0, len(prs))
+            await _update_job_status(db, repo_id, IngestionStep.DISCUSSIONS,   IngestionStatus.RUNNING, 40, 0, len(discussions))
+            await _update_job_status(db, repo_id, IngestionStep.CONTRIBUTORS,  IngestionStatus.RUNNING, 40, 0, len(contributors))
+            await _update_job_status(db, repo_id, IngestionStep.RELEASES,      IngestionStatus.RUNNING, 40, 0, len(releases))
 
             async def _safe_remember_issues():
                 if issues:
@@ -316,11 +323,13 @@ async def _run_ingestion(repo_id: str, owner: str, name: str):
             ]
             step_counts = [len(issues), len(prs), len(discussions), len(contributors), len(releases)]
 
+            memory_failed = False
             for i, (step_result, step_name, step_enum, count) in enumerate(
                 zip(memory_results, step_names, step_enums, step_counts)
             ):
                 if isinstance(step_result, Exception):
-                    logger.error(f"Memory step '{step_name}' failed (non-fatal): {step_result}")
+                    memory_failed = True
+                    logger.error(f"[Ingestion] Memory Graph step '{step_name}' FAILED (non-fatal): {step_result}")
                     await _update_job_status(
                         db, repo_id, step_enum, IngestionStatus.FAILED, 0, 0, count,
                         error_message=str(step_result)[:500],
@@ -330,9 +339,28 @@ async def _run_ingestion(repo_id: str, owner: str, name: str):
                         db, repo_id, step_enum, IngestionStatus.COMPLETED, 100, count, count
                     )
 
+            # ── Mark repository READY — memory graph is now populated ─────────
+            # BUG FIX: READY is now set AFTER Stage 2 completes so all AI features
+            # have real Cognee data available when the user opens them.
+            result = await db.execute(select(Repository).where(Repository.id == uuid.UUID(repo_id)))
+            repo = result.scalar_one()
+            repo.status = RepositoryStatus.READY
+            repo.ingested_at = datetime.now(timezone.utc)
+            await db.commit()
+
+            if memory_failed:
+                logger.warning(f"[Ingestion] Memory Graph Completed with errors — {owner}/{name}")
+            else:
+                logger.info(f"[Ingestion] Memory Graph Completed — {owner}/{name}")
+
             # Finalise memory graph step
-            _emit_progress(repo_id, "memory_graph", "running", 100, "Finalizing Memory Graph...")
+            _emit_progress(repo_id, "memory_graph", "completed", 100, "Memory Graph complete! Repository is ready.")
+            _emit_progress(repo_id, "complete", "completed", 100, "Repository fully ingested and ready.")
             await _update_job_status(db, repo_id, IngestionStep.MEMORY_GRAPH, IngestionStatus.COMPLETED, 100, 1, 1)
+
+            # Trigger Background AI Cache generation
+            from app.services.ai_cache import trigger_background_generation
+            trigger_background_generation(uuid.UUID(repo_id), commit_sha)
 
         except Exception as e:
             logger.error(f"Ingestion pipeline failed for {owner}/{name}: {e}", exc_info=True)
